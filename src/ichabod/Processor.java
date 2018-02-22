@@ -50,6 +50,8 @@ public class Processor {
                 grayscale(bi, out);
             } else if (command.equals("monochrome")) {
                 monochrome(bi, out);
+            } else if (command.equals("edges")) {
+                edges(bi, out);
             } else if (command.equals("reduceColor")) {
                 reduceColor(bi, out, arguments);
             } else if (command.equals("histograms")) {
@@ -111,7 +113,7 @@ public class Processor {
      * @return The list of commands we accept
      */
     public String[] validCommands() {
-        return new String[]{"histograms", "reduceColor", "grayscale", "monochrome", };
+        return new String[]{"edges", "histograms", "reduceColor", "grayscale", "monochrome", };
     }
 
     /**
@@ -469,5 +471,50 @@ public class Processor {
 
     private int L1Distance(Color pc, Color color) {
         return Math.abs(pc.getRed() - color.getRed()) + Math.abs(pc.getGreen() - color.getGreen()) + Math.abs(pc.getBlue() - color.getBlue());
+    }
+
+    private void edges(BufferedImage bi, BufferedImage out) {
+        for (int y = 0; y < bi.getHeight()-1; y++) {
+            
+            
+            for (int x = 0; x < bi.getWidth()-1; x++) {
+                Color pixel = new Color(bi.getRGB(x, y));
+
+                int r = pixel.getRed();
+                int g = pixel.getGreen();
+                int b = pixel.getBlue();
+                
+                
+                Color nextPixel = new Color(bi.getRGB(x, y+1));
+
+                int nextR = nextPixel.getRed();
+                int nextG = nextPixel.getGreen();
+                int nextB = nextPixel.getBlue();
+                
+                //big differences map to white, small differences map to black
+                int differenceSum = Math.abs(r - nextR) + Math.abs(g - nextG) + Math.abs(b - nextB);
+                
+                //If the colors are total opposites, what's the max differenceSum can be?
+                ///Biggest contrast between white and black -> 255*3=765
+                differenceSum /= 1;
+                
+                r = differenceSum;
+                g = differenceSum;
+                b = differenceSum;
+                
+
+               
+
+                //Prevent an exception by keeping values within [0,255]
+                r = clamp255(r);
+                g = clamp255(g);
+                b = clamp255(b);
+
+                Color newColor = new Color(r, g, b);
+
+                out.setRGB(x, y, newColor.getRGB());
+
+            }
+        }
     }
 }
