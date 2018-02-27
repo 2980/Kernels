@@ -113,7 +113,7 @@ public class Processor {
      * @return The list of commands we accept
      */
     public String[] validCommands() {
-        return new String[]{"edges", "histograms", "reduceColor", "grayscale", "monochrome", };
+        return new String[]{"edges", "histograms", "reduceColor", "grayscale", "monochrome",};
     }
 
     /**
@@ -214,9 +214,8 @@ public class Processor {
         int height = bi.getHeight();
 
         int maxColors = 8;
-        
-        if(arguments.containsKey("maxColors"))
-        {
+
+        if (arguments.containsKey("maxColors")) {
             maxColors = Integer.parseInt(arguments.get("maxColors"));
         }
 
@@ -473,37 +472,31 @@ public class Processor {
         return Math.abs(pc.getRed() - color.getRed()) + Math.abs(pc.getGreen() - color.getGreen()) + Math.abs(pc.getBlue() - color.getBlue());
     }
 
-    private void edges(BufferedImage bi, BufferedImage out) {
-        for (int y = 0; y < bi.getHeight()-1; y++) {
-            
-            
-            for (int x = 0; x < bi.getWidth()-1; x++) {
+    private void edges2(BufferedImage bi, BufferedImage out) {
+        for (int y = 0; y < bi.getHeight() - 1; y++) {
+            for (int x = 0; x < bi.getWidth() - 1; x++) {
                 Color pixel = new Color(bi.getRGB(x, y));
 
                 int r = pixel.getRed();
                 int g = pixel.getGreen();
                 int b = pixel.getBlue();
-                
-                
-                Color nextPixel = new Color(bi.getRGB(x, y+1));
+
+                Color nextPixel = new Color(bi.getRGB(x + 1, y));
 
                 int nextR = nextPixel.getRed();
                 int nextG = nextPixel.getGreen();
                 int nextB = nextPixel.getBlue();
-                
+
                 //big differences map to white, small differences map to black
                 int differenceSum = Math.abs(r - nextR) + Math.abs(g - nextG) + Math.abs(b - nextB);
-                
+
                 //If the colors are total opposites, what's the max differenceSum can be?
                 ///Biggest contrast between white and black -> 255*3=765
                 differenceSum /= 1;
-                
+
                 r = differenceSum;
                 g = differenceSum;
                 b = differenceSum;
-                
-
-               
 
                 //Prevent an exception by keeping values within [0,255]
                 r = clamp255(r);
@@ -516,5 +509,51 @@ public class Processor {
 
             }
         }
+    }
+
+    private void edges(BufferedImage bi, BufferedImage out) {
+
+        float[][] kernel = new float[3][3];
+
+        kernel[1][1] = 1; //Identity kernel
+        kernel[2][1] = -1; //Identity kernel
+        
+
+        for (int y = 1; y < bi.getHeight() - 1; y++) {
+            for (int x = 1; x < bi.getWidth() - 1; x++) {
+                //Color pixel = new Color(bi.getRGB(x, y));
+
+                float r = 0;
+                float g = 0;
+                float b = 0;
+
+                for (int yk = 0; yk <= 2; yk++) {
+                    for (int xk = 0; xk <= 2; xk++) {
+
+                        Color nextPixel = new Color(bi.getRGB(x + xk - 1, y + yk - 1));
+                        
+                        float coefficient = kernel[xk][yk];
+
+                        r += nextPixel.getRed() * coefficient;
+                        g += nextPixel.getGreen() * coefficient;
+                        b += nextPixel.getBlue() * coefficient;
+                    }
+                }
+
+                //Prevent an exception by keeping values within [0,255]
+                r = abs255(r);
+                g = abs255(g);
+                b = abs255(b);
+
+                Color newColor = new Color((int)r, (int)g, (int)b);
+
+                out.setRGB(x, y, newColor.getRGB());
+
+            }
+        }
+    }
+
+    private int abs255(float color) {
+        return clamp255((int)Math.abs(color));
     }
 }
