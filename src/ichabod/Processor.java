@@ -403,6 +403,12 @@ public class Processor {
 
     private BufferedImage histograms(BufferedImage bi) {
 
+        BufferedImage convolution = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        edges(bi, convolution);
+
+        bi = convolution;
+
         int marginSize = 20;
         int height = bi.getHeight();
         int width = bi.getWidth();
@@ -472,6 +478,9 @@ public class Processor {
         return Math.abs(pc.getRed() - color.getRed()) + Math.abs(pc.getGreen() - color.getGreen()) + Math.abs(pc.getBlue() - color.getBlue());
     }
 
+    /*
+    Deprecated
+     */
     private void edges2(BufferedImage bi, BufferedImage out) {
         for (int y = 0; y < bi.getHeight() - 1; y++) {
             for (int x = 0; x < bi.getWidth() - 1; x++) {
@@ -513,25 +522,41 @@ public class Processor {
 
     private void edges(BufferedImage bi, BufferedImage out) {
 
-        float[][] kernel = new float[3][3];
+        int kernelWidth = 5;
 
-        kernel[1][1] = 1; //Identity kernel
-        kernel[2][1] = -1; //Identity kernel
+        float[][] kernel = new float[kernelWidth][kernelWidth];
+
+//        kernel[0][0] = -1; kernel[1][0] = -1; kernel[2][0] = -1; //Identity kernel
+//        kernel[0][1] = -1; kernel[1][1] = 8; kernel[2][1] = -1; //Identity kernel
+//        kernel[0][2] = -1; kernel[1][2] = -1; kernel[2][2] = -1; //Identity kernel
+//        kernel[0][0] = 0; kernel[1][0] = 0; kernel[2][0] = 0; //Identity kernel
+//        kernel[0][1] = 0; kernel[1][1] = 1f; kernel[2][1] = 0f; //Identity kernel
+//        kernel[0][2] = 0; kernel[1][2] = 0f; kernel[2][2] = 0; //Identity kernel
+//        
+//        float kernelCoefficient = .1f;
+//        
+//        kernel[0][0] += -1 * kernelCoefficient; kernel[1][0] += -1 * kernelCoefficient; kernel[2][0] += -1 * kernelCoefficient; //Identity kernel
+//        kernel[0][1] += -1 * kernelCoefficient; kernel[1][1] += 8 * kernelCoefficient; kernel[2][1] += -1 * kernelCoefficient; //Identity kernel
+//        kernel[0][2] += -1 * kernelCoefficient; kernel[1][2] += -1 * kernelCoefficient; kernel[2][2] += -1 * kernelCoefficient;        
+//        
+//3 -> 1, 5 -> 2, 7 -> 3
+        //IdentityKernel(kernelWidth, kernel);
         
+        BoxBlur(kernelWidth, kernel);
 
-        for (int y = 1; y < bi.getHeight() - 1; y++) {
-            for (int x = 1; x < bi.getWidth() - 1; x++) {
+        for (int y = kernelWidth/2; y < bi.getHeight() - kernelWidth/2; y++) {
+            for (int x = kernelWidth/2; x < bi.getWidth() - kernelWidth/2; x++) {
                 //Color pixel = new Color(bi.getRGB(x, y));
 
                 float r = 0;
                 float g = 0;
                 float b = 0;
 
-                for (int yk = 0; yk <= 2; yk++) {
-                    for (int xk = 0; xk <= 2; xk++) {
+                for (int yk = 0; yk <= kernelWidth - 1; yk++) {
+                    for (int xk = 0; xk <= kernelWidth - 1; xk++) {
 
-                        Color nextPixel = new Color(bi.getRGB(x + xk - 1, y + yk - 1));
-                        
+                        Color nextPixel = new Color(bi.getRGB(x + xk - kernelWidth/2, y + yk - kernelWidth/2));
+
                         float coefficient = kernel[xk][yk];
 
                         r += nextPixel.getRed() * coefficient;
@@ -545,7 +570,7 @@ public class Processor {
                 g = abs255(g);
                 b = abs255(b);
 
-                Color newColor = new Color((int)r, (int)g, (int)b);
+                Color newColor = new Color((int) r, (int) g, (int) b);
 
                 out.setRGB(x, y, newColor.getRGB());
 
@@ -553,7 +578,38 @@ public class Processor {
         }
     }
 
+    private void BoxBlur(int kernelWidth, float[][] kernel) {
+        for (int yk = 0; yk <= kernelWidth - 1; yk++) {
+            for (int xk = 0; xk <= kernelWidth - 1; xk++) {
+                
+                
+                kernel[xk][yk] = 1.0f/(kernelWidth * kernelWidth);
+                
+                
+            }
+            
+        }
+    }
+
+    private void IdentityKernel(int kernelWidth, float[][] kernel) {
+        //Box blur across 5x5 = 25 values, each cell = 1/25
+        for (int yk = 0; yk <= kernelWidth - 1; yk++) {
+            for (int xk = 0; xk <= kernelWidth - 1; xk++) {
+                
+                int middleIndex = kernelWidth / 2;
+                
+                if (yk == middleIndex && xk == middleIndex) {
+                    kernel[xk][yk] = 1;
+                } else {
+                    kernel[xk][yk] = 0;
+                }
+                
+            }
+            
+        }
+    }
+
     private int abs255(float color) {
-        return clamp255((int)Math.abs(color));
+        return clamp255((int) Math.abs(color));
     }
 }
